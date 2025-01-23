@@ -6,11 +6,12 @@ import { Upload } from 'lucide-react';
 interface ImageUploadProps {
   setPlantData: (data: any) => void;
   setIsLoading: (loading: boolean) => void;
+  setSelectedImage: (image: string | null) => void;
 }
 
-export default function ImageUpload({ setPlantData, setIsLoading }: ImageUploadProps) {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+export default function ImageUpload({ setPlantData, setIsLoading, setSelectedImage }: ImageUploadProps) {
   const [error, setError] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState<boolean>(false);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -22,15 +23,16 @@ export default function ImageUpload({ setPlantData, setIsLoading }: ImageUploadP
       // Create a new FileReader instance
       const reader = new FileReader();
       
-      // Set up the FileReader onload handler for preview
-      reader.onload = (e) => setSelectedImage(e.target?.result as string);
-      
       // Read the file as Data URL
       reader.readAsDataURL(file);
 
       // Wait for the FileReader to complete
       const base64Image = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
+        reader.onload = () => {
+          const result = reader.result as string;
+          setSelectedImage(result);  // Set the preview image
+          resolve(result);
+        };
         reader.onerror = () => reject(new Error('Failed to read file'));
       });
 
@@ -52,35 +54,64 @@ export default function ImageUpload({ setPlantData, setIsLoading }: ImageUploadP
       console.error('Error:', error);
       setError(error instanceof Error ? error.message : 'An error occurred');
       setPlantData(null);
+      setSelectedImage(null);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const input = document.createElement('input');
+      input.files = e.dataTransfer.files;
+      handleImageUpload({ target: input } as any);
+    }
+  };
+
   return (
     <div>
-      <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-green-300 border-dashed rounded-lg cursor-pointer bg-green-50 hover:bg-green-100">
+      <div
+        className={`relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors
+          ${dragActive 
+            ? 'border-green-500 bg-green-50' 
+            : 'border-green-300 bg-green-50 hover:bg-green-100'
+          }`}
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+      >
         <div className="flex flex-col items-center justify-center pt-5 pb-6">
-          <Upload className="w-8 h-8 mb-2 text-green-500" />
-          <p className="mb-2 text-sm text-gray-500">Click to upload image</p>
+          <Upload className={`w-8 h-8 mb-2 ${dragActive ? 'text-green-600' : 'text-green-500'}`} />
+          <p className="mb-2 text-sm text-gray-500">
+            {dragActive ? 'Drop your image here' : 'Click to upload or drag and drop'}
+          </p>
           <p className="text-xs text-gray-500">JPG, PNG up to 10MB</p>
         </div>
         <input
           type="file"
-          className="hidden"
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           accept="image/*"
           onChange={handleImageUpload}
         />
-      </label>
+      </div>
       {error && (
         <p className="mt-4 text-red-500 text-center">{error}</p>
-      )}
-      {selectedImage && (
-        <img
-          src={selectedImage}
-          alt="Selected plant"
-          className="mt-4 max-w-full h-auto rounded-lg"
-        />
       )}
     </div>
   );
