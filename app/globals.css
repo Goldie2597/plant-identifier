@@ -2,6 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes gradient-xy {
+  0%, 100% {
+    background-position: 0% 50%;
+    opacity: 1;
+  }
+  25% {
+    background-position: 100% 0%;
+    opacity: 0.8;
+  }
+  50% {
+    background-position: 100% 100%;
+    opacity: 0.6;
+  }
+  75% {
+    background-position: 0% 100%;
+    opacity: 0.8;
+  }
+}
+
+.animate-gradient-xy {
+  background-size: 400% 400%;
+  animation: gradient-xy 15s ease infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+@layer utilities {
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+  }
+  .backdrop-blur-md {
+    backdrop-filter: blur(8px);
+  }
+  .backdrop-blur-lg {
+    backdrop-filter: blur(16px);
+  }
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -10,5 +50,5 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
+  background: transparent;
 } 
